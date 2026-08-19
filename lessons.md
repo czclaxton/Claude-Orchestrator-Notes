@@ -365,3 +365,14 @@ precisely why it's the likeliest file to already hold someone else's uncommitted
 
 **Where it lives:** here only. Neither finding is written into `commands/catch-up.md` or
 `commands/wrap-up.md` yet; both are concrete enough to be fixed directly in those command bodies.
+
+### 2026-08-19 — THROWAWAY TEST ENTRY - safe to delete
+
+**Status: asserted** (nothing was re-checked — this entry is not a finding at all).
+
+This entry is a deliberate test of the PR-based lessons workflow in `/wrap-up`, not a real
+observation about the orchestrator plugin. It exists only to exercise the branch → commit → push →
+`gh pr create` path end to end and confirm the resulting PR looks right.
+
+**Action:** close the PR carrying this entry and delete the branch. Do not merge it, and do not
+carry this entry forward into the next version-bump review batch.
