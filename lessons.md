@@ -35,9 +35,43 @@ pattern, or one incident concrete enough to actually learn from.
 specific agent file, `SKILL.md`, `ideas-backlog.md`, or "not yet promoted — logged for now").
 **A logged entry does not automatically become a rule change** — same promotion bar as everywhere
 else in this project: a recurring pattern, or one incident specific and severe enough to justify
-acting on alone. If this file ever grows past what plain markdown can hold usefully, the heavier
-structured-ledger pattern (`docs/product/review-gaps/` in the Pepco project) is the fallback to
-revisit — not the starting point.
+acting on alone.
+
+**Optional classification tag (experimental, 2026-08-19):** borrowed from Pepco's SoA-installed
+review-gap ledger, which defines this taxonomy but — verified before adopting it, not assumed —
+never actually recorded a real entry with it in that project. Unproven, not battle-tested; adopt
+provisionally and see if it earns its keep. When an entry is about a bug/gap someone else's work
+(or the architect's own) let through, tag it:
+- `spec-gap` — a genuine decision the spec left missing or underspecified; a competent builder
+  would have had to stop and ask. Bias against this for self-evident behavior no competent spec
+  would need to enumerate ("save persists", "delete removes") — that's a shipped violation, not a
+  spec-gap.
+- `qa-gap` — needed experiential/manual verification outside normal review to catch.
+- `review-reachable` — visible in the diff at review time; the reviewer had enough evidence and
+  missed it.
+- `completeness-gap` — delivered scope was valid but missed adjacent work that should have been
+  shaped into the plan.
+**Litmus test for the spec-gap/qa-gap split:** would a competent person, given no spec, have built
+it right on instinct? If yes, it's not a spec-gap — classifying it as one launders an execution
+miss into a planning miss and leaves the real gap (verification or review) unaddressed.
+
+**Optional heavier structure for a substantial entry** (a full validation run, not a one-line
+friction note) — also borrowed from Pepco/SoA, but **this one is proven**, not experimental: a
+2026-08-05 retrospective written with this exact structure in that project was a real, successful
+artifact, independently confirmed. Seven sections, in order: scope delivered (one paragraph, the
+factual anchor); what went well (with *why* it worked, not just that it did — "TypeScript caught
+it" is noise, "caught it because the type was narrow enough to make the error unambiguous at the
+call site" is signal); pain points (split avoidable-waste, which could've been designed away, from
+expected-cost, which is inherent — they imply different follow-ups); surprises (highest-signal
+section — things not in the spec, good or bad, that won't appear anywhere else); what we'd do
+differently (distinct from pain points — this is what hindsight would redesign, with the original
+reasoning for why the first choice looked right); net assessment (one paragraph, no hedging — did
+it work or not); follow-up (concrete next actions, not "consider X"). Use this for a run like
+2026-08-19's below; a two-line friction note doesn't need all seven sections.
+
+If this file ever grows past what plain markdown can hold usefully, the heavier structured-ledger
+pattern (`docs/product/review-gaps/` in the Pepco project) is the fallback to revisit — not the
+starting point.
 
 ---
 
@@ -81,3 +115,146 @@ file changed in the same session.
 **Where it lives:** not yet promoted to a doc — logged here. Worth turning into an actual dev-loop
 habit (bump version per edit) once real testing is more than occasional, rather than re-discovering
 this each time.
+
+### 2026-08-19 — First real validation run: Hang-Up Log MVP, sandboxed off Pepco
+
+**What happened:** first time any of the four agents did real, non-trivial delegated work. Task: a
+grouped/duplicates view for Pepco's Hang-Up Log feature, built in an isolated local sandbox (cloned
+off Pepco's `develop`, origin removed, reseeded with clean data) rather than the real repo. Full
+detail and setup: `first-validation-run-brief.md` in this same repo. Session ran on Max 5x (upgraded
+mid-session), architect on Opus, all four lane pins confirmed correct beforehand via a fresh
+single-turn smoke test.
+
+**Model pins — closed out.** All four lanes ran on their pinned models across real multi-step
+delegated builds (not just the trivial single-turn self-report from 2026-08-11): routine-implementer
+→ Sonnet 5, complex-implementer → Opus 5, critical-implementer and advisor → Fable 5. The 2026-08-11
+result is no longer provisional.
+
+**Routing calls: both correct, with concrete evidence, not just "it worked."**
+- The backend grouped-query endpoint went to complex-implementer (Opus) because it had a real,
+  non-obvious correctness trap: computing "most recent occurrence per phone number" via independent
+  `MAX(date)` / `MAX(time)` can silently stitch together a date and time from two different calls —
+  plausible-looking, quietly wrong. The agent avoided it deliberately (chose `groupBy` + an
+  ordered `findMany` so both values always come from one real row), explained the reasoning, then
+  noticed my own verification command was weak evidence (two sort orders happened to produce
+  byte-identical output on the seed data) and strengthened it unprompted — inserted a real
+  divergent row via the live API, proved the sorts actually differ, proved the pitfall was really
+  avoided, then cleaned up and re-verified the DB was back to its seeded state.
+- The frontend (toggle + duplicates table + drill-down modal) went to routine-implementer (Sonnet)
+  as a close port of two already-established patterns (an unused `Tabs` component, the existing
+  modal pattern). It delivered clean, and — notably — honestly flagged in its own report that it
+  had no way to drive a real browser, so it could not claim visual verification, rather than papering
+  over the gap with "should work."
+- critical-implementer was **not** exercised on real work this run — only the earlier trivial
+  self-report smoke test. Nothing in this task was genuinely high-stakes/hard-to-reverse, so routing
+  anything to it would have been gaming the test, not validating it. Honest limit of this run, not a
+  finding against the lane.
+
+**The mandatory final review earned its cost — concretely, not as a formality.** `advisor` caught a
+real defect neither implementer's own verification could have: I (the architect) had made the
+`HangUpLog.phoneNumber` column required via a manual raw-SQL table recreation directly against the
+sandbox's live DB during setup, and never wrote an actual Prisma migration for it. Both curl-based
+verifications passed because they ran against the already-drifted live DB — the gap only shows up
+against a fresh `prisma migrate deploy`, which `advisor` checked by reading the migration file
+against the schema. Verdict: fix-first, not ship, with two named, specific fixes (the missing
+migration, and unvalidated POST/PUT now throwing a raw 500 on missing phone_number instead of a
+clean 400). Both real, both confirmed independently before believing the report.
+
+**One clean fix-loop, exactly as the doctrine describes.** Sent a corrected follow-up spec back to
+the same lane (complex-implementer). One round trip, no escalation needed: it proved the drift first
+(replayed migration history onto a throwaway shadow DB rather than assuming), fixed both issues,
+proved the fix (fresh-environment `migrate deploy` succeeds, 400s return correctly, all 18 seeded
+rows and all 4 duplicate counts still intact). I independently re-ran the same checks myself before
+accepting it — all matched.
+
+**Good restraint, worth noting on its own.** While fixing the migration, the same agent found an
+unrelated pre-existing schema/migration drift on a different table (`followups`' FK constraint is
+weaker in the migration than the schema implies) — and correctly declined to fix it, flagging it
+precisely instead of scope-creeping into an unrelated bug it happened to notice. Matches the
+"if it's architectural, stop and report" discipline in its own contract.
+
+**A gap on the architect's side, not the plugin's doctrine.** Mid-run I reached for Claude in Chrome
+for a one-off visual check by default/habit, without consulting the browser-tool decision framework
+already sitting in `ideas-backlog.md` #4 — which, for exactly this case (one-off manual check, no
+real auth), names Chrome DevTools MCP as the default. No functional harm, but a real "the memory
+existed and wasn't consulted at the decision point" gap, distinct from anything the routing doctrine
+covers. Worth remembering as its own category of failure mode, separate from routing correctness.
+
+**Root cause of the migration gap was mine, not a lane's.** It came from a manual, out-of-band schema
+edit I made directly during sandbox setup (Step 2), not from any delegated lane failing its spec.
+Lesson for future sandboxed runs: any manual schema/DB edit made while setting up a sandbox needs a
+real migration file written immediately, not deferred — treat sandbox setup with the same rigor as
+delegated work, since gaps introduced there surface identically to real bugs later.
+
+**Open items still not resolved by this run:**
+- **Loosen the five-part spec for `critical-implementer`** — still no direct evidence either way;
+  the lane wasn't exercised on real work this run (see above). Needs a task that's genuinely both
+  judgment-heavy and high-stakes to test properly.
+- **Fable weekly-cap consumption under real use** — thin evidence. `critical-implementer` only got
+  the trivial smoke test; `advisor` made exactly one real review call this run. Can't yet say whether
+  the 50% cap binds under heavier real use.
+- **Opus-vs-Fable-as-architect** — no new evidence; the architect ran on Opus throughout.
+
+**Sandbox approach itself: validated, reusable.** Clone + remove origin + copy gitignored `data`/`.env`
+files + reseed with deliberately clean-but-realistic data was enough to get fully real, live,
+verifiable behavior for all three pieces of the feature — including the grouped/duplicates view,
+which the original real-world plan expected to ship mocked. Worth reusing this pattern for future
+validation runs rather than re-deriving it.
+
+**Where it lives:** this entry is the primary record. `project_claude_orchestrator.md`'s "open items"
+section should be updated to reflect the model-pin item as closed and the remaining two items as
+still open with this run's specific evidence gaps noted.
+
+### 2026-08-19 — Mined Pepco's Son-of-Anton install for portable ideas, didn't adopt it wholesale
+
+**What happened:** Pepco (a real client project, unrelated to Claude Orchestrator itself) has
+Son-of-Anton, a third-party delivery-orchestration framework, installed. Considered whether to make
+Claude Orchestrator the primary system there instead. Investigated properly before deciding
+anything — read SoA's actual skill content (not just the CLAUDE.md pointer file), verified real
+usage evidence in the repo (`git ls-files`/`.git/info/exclude`/`git log --grep`, not assumption),
+and sent a `claude-orchestrator:advisor` (Fable) agent to independently re-verify the findings and
+critique the recommendation before acting — a real commitment-boundary consult, not a rubber stamp.
+The advisor caught two factual errors in my own read (the review-gap ledger was empty, not "one
+entry from install day" — stronger evidence for disuse than claimed; the one retrospective was
+real, successful evidence the retrospective *skill* works, not evidence of disuse as I'd framed it)
+and one real content-loss risk I'd missed (Pepco's `CLAUDE.md`, despite being 100% untracked and
+safe to strip structurally, held the only written "format → stage → commit" norm and a genuinely
+good "don't rationalize away review findings" line — worth salvaging, not deleting outright).
+
+**Conclusion:** SoA's autonomous, PR-centric, multi-vendor-review delivery machinery
+(worktree-per-ticket, `bun run deliver` state machine, wall-clock polling on CodeRabbit/Qodo/
+Greptile/SonarQube, "do not pause between tickets") is a genuine philosophy mismatch with
+gate-everything-through-manual-local-review — not a maturity gap Claude Orchestrator needs to close
+before "replacing" it. Confirmed by real evidence, not assumed: zero of 152/154 commits reference a
+ticket/epic/SoA, the review-gap ledger was never used, `prReview` was already disabled in SoA's own
+config. Three specific ideas were worth taking independent of that machinery — see the format/
+classification-tag/heavier-structure additions above this entry, and the still-open question below.
+
+**Fix/rule concluded:** (1) Pepco's `CLAUDE.md` replaced with a minimal, non-SoA note (the salvaged
+format-norm + review-discipline lines), SoA's actual files (`.son-of-anton/`, skills, delivery
+tooling) left untouched on disk as reference — full removal was unnecessary since it was never
+git-tracked to begin with. (2) Two ideas ported into this file's own format (retrospective structure,
+defect-classification tags). (3) One idea — `soa-grill-me`'s one-question-at-a-time protocol with a
+stated recommendation + steelmanned opposing view + tradeoffs per question — directly contradicts
+an existing doctrine rule Connor explicitly requested on 2026-08-12 ("batch questions, don't go
+one-at-a-time"). Correctly **not** silently resolved either way — flagged for Connor's own call,
+still open as of this entry.
+
+**Where it lives:** `lessons.md`'s format section (this file, above) for the two adopted ideas;
+`skills/orchestration/SKILL.md` is the eventual home for the third *if and when* Connor decides how
+to resolve the batching conflict — not yet written there.
+
+**Update, same day:** two things above are now stale.
+
+1. **SoA's files were not left in place after all.** Connor pointed out `.son-of-anton/`,
+   `tools/delivery/`, `.agents/`, and the `soa*` skills were genuinely redundant — a real,
+   independent standalone copy already exists at `C:\Repos\Son of Anton`, and even that's just a
+   convenience mirror of the real source of truth (`cesarnml/son-of-anton` on GitHub), not something
+   irreplaceable. Verified directly (`find`, file comparison) before deleting, not assumed. All of it
+   removed from Pepco. Nothing lost — a fresh `git subtree add` recovers it if ever wanted again.
+2. **The batching conflict is resolved.** Connor stated a direct, general preference: one question
+   at a time, plain-terms explanation, room to go deeper — not a Claude-Orchestrator-specific
+   answer, a standing preference for how he wants to be asked things generally. `skills/orchestration/
+   SKILL.md`'s planning-phase section now reflects this (version bumped to 1.0.2, reinstalled).
+   The `grill-me`-derived format (recommendation + steelmanned opposing view + tradeoffs per
+   question) is folded in as the concrete mechanism, not just "ask one at a time" on its own.
