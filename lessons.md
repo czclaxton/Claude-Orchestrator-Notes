@@ -258,3 +258,110 @@ to resolve the batching conflict — not yet written there.
    SKILL.md`'s planning-phase section now reflects this (version bumped to 1.0.2, reinstalled).
    The `grill-me`-derived format (recommendation + steelmanned opposing view + tradeoffs per
    question) is folded in as the concrete mechanism, not just "ask one at a time" on its own.
+
+### 2026-08-19 — Building the testing-mode feedback loop itself (v1.0.2 → v1.0.8): infrastructure
+work, not agent routing, but real friction throughout
+
+**Status: verified** (each claim below was directly observed this session, not inferred).
+
+**What happened:** built the actual testing-mode feedback loop this file exists to feed — the
+`SessionStart` hook, `/claude-orchestrator:wrap-up`/`:catch-up`, the setup/alias mechanism, and this
+toggle. Almost none of it touched the routing ladder this file otherwise tracks; it was plugin
+infrastructure. Recording it anyway since `/wrap-up`'s own instructions scope this file to
+"friction about the orchestrator plugin itself," not just agent routing, and there was a lot of it.
+
+**Finding 1 — silently writing to the user's filesystem on session start is against current best
+practice, not just a style preference.** First design: a `Setup` hook writing two small relay files
+into `~/.claude/commands/` automatically, triggered by `claude --init-only`. Dropped after actually
+searching for prevailing practice rather than trusting instinct: npm v12 and pnpm v10+ both now
+default to *blocking* postinstall-style scripts specifically because "code runs automatically, no
+visibility, no consent" is the exact pattern that's been abused. There's also a Claude-Code-specific
+version of the same problem: a hook's raw Node `fs` writes bypass Claude Code's own Read/Write/Edit
+permission-prompt system entirely — a hook is not gated by it at all, unlike the model's own Write
+tool. Replaced with `/claude-orchestrator:setup`, a command whose body has the model create the
+files with its own Write tool, so the write is visible and permission-prompted like any other.
+**Rule concluded:** before shipping anything that writes outside the plugin's own directory (home
+dir config, personal command files, etc.), default to a model-driven write via the normal tool
+permission system, not a hook doing it silently — and check prevailing practice, don't just trust
+what feels convenient.
+
+**Finding 2 — several confident assertions about Claude Code platform behavior were wrong on first
+real test, which is why Connor gave a standing instruction mid-session to verify everything
+empirically going forward (see `feedback_verify_dont_assume.md` memory).** Concretely: assumed a
+collision-free plugin command name would resolve bare — false, plugin commands never get a
+bare-name shortcut, ever, confirmed by testing multiple names. Assumed pushing to GitHub was
+required for local `plugin update` to pick up changes — false, this marketplace is a local-directory
+source, not a GitHub clone; only a `plugin.json` version bump matters locally. The original command
+names `/reset`/`/resume` were shipped without checking for collisions and both silently broke
+(`/reset` triggered a real context-clear instead of dispatching to the command; `/resume` returned
+"isn't available") — found only by testing the bare name in a scripted session, not by reading docs.
+Most recently: after a real version bump + successful `plugin update`, a Claude Code session that
+was *already running* did not pick up the new command — needed a full restart, matching the
+CLI's own "Restart to apply changes" message, which is accurate, not boilerplate.
+
+**Reusable technique surfaced by this, worth remembering on its own:** `claude -p
+--input-format=stream-json --output-format=stream-json` lets a scripted, multi-turn session
+(including sending `/clear` mid-session) be inspected via its real internal event stream
+(`hook_started`/`hook_response`, `conversation_reset`, tool_use, etc.) — genuine proof of hook/command
+behavior without needing a human to test manually in a second terminal, and without risking the
+current session's own context. Real limitation found the same way: `-p` non-interactive mode can't
+answer permission prompts, so any Write needing a fresh approval fails there specifically — don't
+mistake that for a real bug when a headless test fails to complete a write.
+
+**Finding 3 — the advisor consult earned its cost on infrastructure/design work, not just code
+review.** Used twice this session (the `/claude-orchestrator:setup` design, the testing-mode toggle
+command), both returned "ship" but each caught a real, non-obvious gap on the first pass: the
+`/claude-orchestrator:setup` command's original wording would have claimed an existing file was
+"already set up" without checking it was actually this plugin's relay file rather than an unrelated
+user command with the same name. Small fixes both times, but real ones a same-session self-review
+plausibly would have missed.
+
+**Where it lives:** `feedback_verify_dont_assume.md` memory (finding 2, the standing instruction);
+`CONTRIBUTING.md` in the main repo (the version-bump and naming-collision rules, already promoted
+there as concrete process docs, not just logged here); this entry is the fuller record of *why*
+those rules exist. Finding 1's "model-driven write over silent hook write" rule is not yet written
+into any doctrine file — currently only lives here and in the `commands/setup.md` /
+`commands/testing-mode.md` implementations themselves.
+
+### 2026-08-19 — `/catch-up` and `/wrap-up` hardcode one resume-note path, and silently lose to a
+project's own convention
+
+**Status: verified** (observed directly this session — the lookup failed, the alternate note existed
+and was current).
+
+**Finding 1 — `/catch-up` looks for `RESUME-PROMPT.md` at the project root and nowhere else, so a
+project that already maintains its own resume note under a different path reads as having none.**
+In the project used this session, a project-local skill (unrelated to this plugin) had for several
+sessions been writing a detailed, accurate, current resume note to a different path under the docs
+directory. `/catch-up`'s existence check missed it entirely. Per its own instructions the correct
+behavior at that point is "say so plainly and ask the user what they'd like to work on, rather than
+guessing" — i.e. the command would have reported *no context available* while a better resume note
+than the one it was looking for sat two directories away. The catch only happened because the
+existence check was run against both paths on a hunch, not because the command suggested it.
+
+The failure is silent and it is exactly inverted from what you want: the more mature the project's
+own note-keeping, the more likely `/catch-up` is to report nothing. And `/wrap-up` completes the
+problem from the other end — it writes its note to the same hardcoded root path, so on a project
+with an existing convention it *creates a second competing resume note* rather than updating the
+one already in use. Two notes, both claiming to be current, guaranteed to drift.
+
+**Rule concluded:** both commands should discover an existing resume note before assuming their own
+filename — glob a few conventional names/locations, and if one is found that isn't the plugin's own,
+`/wrap-up` should update that file (or at minimum say out loud that it is creating a second one)
+rather than writing a duplicate. Hardcoding a single filename is fine for a project the plugin
+owns; it is wrong for a plugin that drops into arbitrary existing repos.
+
+**Finding 2 — `/wrap-up`'s "never sweep in other uncommitted work" guard is unenforceable as
+written, because the collision it needs to guard against is in `lessons.md` itself.** The
+instruction says stage and commit only `lessons.md`, never `git add -A`, so unrelated uncommitted
+work in that repo isn't swept in. But the notes repo was found this session with a large
+uncommitted entry *already sitting in `lessons.md`* from a previous session whose `/wrap-up` had
+appended but never committed. Staging "only `lessons.md`" therefore commits that prior session's
+work too, under this session's commit message, and the guard as phrased gives no signal that
+anything unusual is happening. **Rule concluded:** the step should have the model check whether
+`lessons.md` is already dirty *before* appending, and if it is, say so and let the user decide
+whether the pre-existing content goes in the same commit — the file being the plugin's own is
+precisely why it's the likeliest file to already hold someone else's uncommitted work.
+
+**Where it lives:** here only. Neither finding is written into `commands/catch-up.md` or
+`commands/wrap-up.md` yet; both are concrete enough to be fixed directly in those command bodies.
