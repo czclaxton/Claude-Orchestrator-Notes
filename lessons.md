@@ -365,3 +365,60 @@ precisely why it's the likeliest file to already hold someone else's uncommitted
 
 **Where it lives:** here only. Neither finding is written into `commands/catch-up.md` or
 `commands/wrap-up.md` yet; both are concrete enough to be fixed directly in those command bodies.
+
+### 2026-08-20 — `/catch-up`'s git check trusts local tracking refs, and confidently reported a stale remote
+
+**Status: finding 1 verified** (re-checked against the server and the ref reflog after the user
+challenged the claim); **finding 2 asserted** (a doctrine-level observation, not a re-run
+experiment).
+
+**Finding 1 — "run `git status` and treat it as source of truth" is wrong for any claim about what
+a *remote* branch contains.** `/catch-up` directs the model to establish real current state from
+local git. This session that produced a confidently-wrong report on the first substantive question
+asked: a `git fetch` was run at session start, returned no output, and the per-branch tips read
+from local remote-tracking refs were reported to the user as "nothing new has been pushed." Four
+branches had in fact moved. The pushes landed 20–40 seconds *before* the fetch completed, and the
+tracking refs updated moments after the branch listing was read — so every individual command was
+correct and the conclusion drawn from them was not. The error surfaced only because the user
+pushed back citing a third party's contrary claim; `git ls-remote` (which queries the server rather
+than reading local refs) then showed the true tips immediately, and the ref reflog showed exactly
+when they had moved.
+
+The failure mode is nasty because it is silent and self-confirming: a fetch that returns nothing
+looks identical to a fetch that had nothing to return, and the model has no signal distinguishing
+them. It is also worst at session start, which is precisely when `/catch-up` runs and when a
+concurrent push from a collaborator is most likely to have just landed.
+
+**Rule concluded:** the command should distinguish *local* state (working tree, staged changes,
+local branch position — `git status` is authoritative) from *remote* state (what a branch actually
+contains right now — only `git ls-remote` is authoritative). Any assertion of the form "nothing new
+has been pushed" or "branch X is unchanged" must come from the server, and a negative claim about
+remote state should be treated as requiring stronger evidence than a positive one. Reporting a
+stale negative is far more damaging than reporting a stale positive, because it terminates
+investigation rather than prompting it.
+
+**Finding 2 — the doctrine's blanket "delegate all implementation, never type code yourself" has no
+carve-out for investigative verification, and collides with harness rules against unprompted agent
+spawning.** This session was almost entirely review work: reproducing reported defects, building
+throwaway harnesses to test whether a claimed fix actually worked, and disproving one of the
+orchestrator's own hypotheses empirically. Under a strict reading of the routing doctrine, every
+one of those harnesses was implementation that should have been delegated. Two reasons that reading
+is wrong in practice, neither of which the doctrine addresses:
+
+1. Verification output is load-bearing evidence the orchestrator is separately required to re-check
+   before relaying. Delegating it and then re-verifying it is strictly more expensive than doing it
+   directly — the usual delegation economics invert.
+2. The harness-level instruction in effect forbade spawning agents unless the user asked, while the
+   project-level doctrine said to delegate everything. Both were active simultaneously and the
+   doctrine offers no precedence rule, leaving the conflict to be resolved ad hoc each time.
+
+**Rule concluded:** the routing table should name investigative/verification work as a distinct
+category that the orchestrator does directly by default — not because it is cheap, but because its
+product is evidence the orchestrator must personally stand behind. And the doctrine should state
+explicitly that a harness-level prohibition on spawning agents wins over "always delegate," rather
+than leaving the model to arbitrate between two instructions that both present as mandatory.
+
+**Where it lives:** here only. Finding 1 is concrete enough to write directly into
+`commands/catch-up.md` as a local-vs-remote distinction in the git-state step. Finding 2 belongs in
+the orchestration skill's routing table, and is closely related to the 2026-08-19 entry's theme of
+the plugin's own instructions being under-specified where they meet an existing environment.
