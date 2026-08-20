@@ -422,3 +422,65 @@ than leaving the model to arbitrate between two instructions that both present a
 `commands/catch-up.md` as a local-vs-remote distinction in the git-state step. Finding 2 belongs in
 the orchestration skill's routing table, and is closely related to the 2026-08-19 entry's theme of
 the plugin's own instructions being under-specified where they meet an existing environment.
+
+### 2026-08-20 (second session) — Lanes' *incidental* claims are markedly less reliable than their primary output, and the verification doctrine only covers the latter
+
+**Status: finding 1 verified** (both inaccuracies re-checked directly against the source of truth,
+in both cases contradicting the lane); **finding 2 verified** (the sequence of proposals and the
+final chosen design are a matter of record from this session).
+
+**Finding 1 — the doctrine tells the orchestrator to verify the deliverable, and says nothing about
+the asides bundled alongside it.** "Reports are claims, not evidence… read the diff, and re-run the
+verification command" is aimed squarely at the work the lane was asked to do. It worked: every
+substantive claim about the delivered change held up when re-run. What did *not* hold up, twice,
+was material the lane volunteered outside its assigned scope.
+
+An implementation lane appended a "pre-existing problem, unrelated to this task" note to its report,
+naming four-plus areas of the codebase as affected. Re-running the diagnostic showed exactly one.
+The same lane repeated the same overstated claim in a later report on the same branch, unprompted
+and unchanged, after the first had already been checked and found wrong. Separately, the review lane
+supported an accessibility finding with a prevalence claim — that the pattern in question already
+existed elsewhere in the codebase — which a single search disproved: it was the only instance. That
+one mattered more than it looks, because prevalence was the entire difference between "consistent
+with existing convention" and "a lone deviation from it," and the orchestrator was about to relay
+the former to the user.
+
+The shape is consistent: lanes are reliable about what they were asked to do and noticeably
+looser about context they offer around it — counts, prevalence, "this also affects…", "same as
+elsewhere." These land in reports as supporting detail, sail past a verification step aimed at the
+diff, and are exactly the sentences an orchestrator is most tempted to relay verbatim because they
+sound like helpful extra diligence.
+
+**Rule concluded:** the verification section should separate a lane's *assigned output* (verify by
+re-running the stated command) from its *volunteered context* (verify independently before
+relaying, or relay explicitly as unverified). A quantified or comparative claim outside the task's
+scope — "N places are affected", "this already exists elsewhere", "unrelated pre-existing issue" —
+should be treated as a lead to check, never as a finding to pass on. Worth noting the failure is
+not random: it skews toward overstating breadth, which inflates apparent severity.
+
+**Finding 2 — consulting the advisor at a commitment boundary works, but the architect should carry
+the *fork* back to the human, not the advisor's answer.** Faced with a design problem where two of
+the user's own stated constraints turned out to collide, the orchestrator consulted the advisor as
+the doctrine prescribes. The advisor corrected a piece of the orchestrator's reasoning, confirmed
+another, and proposed a fourth option better than the three on the table. All useful. But it
+optimized strictly *within* the constraints it was handed — as it should, having no access to the
+user — and its recommendation carried a real cost: a data-model change made to satisfy a
+requirement.
+
+Taking the fork to the user instead produced a materially better outcome. The user pointed out that
+one of the constraints the advisor had treated as fixed was not actually a requirement at all,
+which dissolved the problem and removed the need for any data-model change. The advisor could not
+have known that; the constraint had been stated to it as given, and it had been stated to the
+advisor because the orchestrator believed it.
+
+**Rule concluded:** the advisor's verdict is an input to the human's decision at a commitment
+boundary, not a substitute for it. When a boundary arises because the user's own stated constraints
+conflict, the orchestrator should present the tradeoff and let the user relax a constraint — they
+are the only party who can. The doctrine's "act on the verdict or surface the disagreement" implies
+a binary that misses this third case: agreeing with the advisor's reasoning entirely while still
+needing to check whether the premises it reasoned from are actually binding.
+
+**Where it lives:** here only. Finding 1 belongs in the orchestration skill's Verification section,
+as a distinction between assigned output and volunteered context. Finding 2 belongs in the
+commitment-boundaries section, and extends the 2026-08-20 entry's theme of the doctrine being
+under-specified where two of its own instructions meet.
