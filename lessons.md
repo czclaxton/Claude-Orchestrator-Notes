@@ -573,7 +573,31 @@ finishing anything.
 merged — alongside whatever process work happened, so that a session which produced only meta-work
 is visible as such at the moment it ends rather than only when someone asks directly.
 
+**Finding 6 — six consecutive version bumps silently did nothing, because the edit was keyed on an
+assumed current value rather than the actual one.** Verified against the merged history. The plugin's
+own contributor doc requires a version bump on every change, since the install cache keys on it and a
+content change without one stays stale forever. The session performed that bump six times on one
+branch using a find-and-replace that searched for a specific old version string — a string carried
+over from a *different* branch rather than read from the file being edited. Every replacement matched
+nothing. The tool exited successfully each time. The branch merged carrying no version change at all,
+and the failure surfaced only when an unrelated check compared the published version against the
+merged content.
+
+Two properties make this worse than an ordinary slip. It is **silent by construction** — a
+find-and-replace that matches nothing is indistinguishable from one that matched, at the exit-code
+level. And it is **self-concealing across a chain** — once the first bump no-ops, every later bump
+searches for a value that now never existed, so a sequence of them fails identically and the file
+looks untouched rather than half-edited.
+
+**Rule concluded:** never edit a value by searching for its assumed current contents. Read the value,
+then write the new one — or assert the match and fail loudly when it is absent. This is the same
+class as the session's other findings: an operation that returns exactly what it was asked for,
+where what it was asked for was wrong, and the correct-looking result suppresses the check. The
+version-bump instruction in the contributor doc should say to read-then-write rather than simply
+"bump the version," since the natural mechanical reading of that instruction is the one that fails.
+
 **Where it lives:** here only. Finding 1's replay requirement and finding 2's refutation framing
 belong in the orchestration skill's Verification and advisor-consultation sections. Finding 3 belongs
 wherever push behavior is described. Finding 4 is already written into the contributor doc's
-reasoning-capture section, pending review. Finding 5 belongs in `/wrap-up` itself.
+reasoning-capture section, pending review. Finding 5 belongs in `/wrap-up` itself. Finding 6 belongs in the contributor doc's version-bump
+section.
