@@ -73,6 +73,78 @@ this directly — screenshot-heavy Claude in Chrome usage ate ~73% of one conver
 a stale/lagging screenshot produced a false-positive bug report that a text read would have caught
 immediately. Cheap to state as a default now.
 
+### 5. Personas / profiles — preset modes that change how the session communicates
+
+**Status: not started, deliberately parked behind the current lessons-promotion backlog.** Recorded
+now because the seed evidence is concrete and would otherwise be lost.
+
+**The idea.** Named preset personas the user toggles into, each changing how the session explains
+itself. First and clearest case: a **layman's-terms mode** — plain language, analogies, no jargon —
+for when the user is learning something complex or being caught up on unfamiliar ground. Other
+personas to be discovered from real use rather than invented up front.
+
+**Seed evidence (2026-08-20).** During a plugin-maintenance session the user asked, mid-thread, for
+a technical status report to be re-delivered "in layman's terms as if I'm a non-technical investor."
+The re-delivery was materially more useful to them than the original. That is a real, observed
+demand for a register shift — not a hypothetical. It is also the entire case for the feature, and
+one data point is one data point.
+
+**Step 0 before building anything: find out whether the platform already does this.** Claude Code
+may already ship a built-in mechanism for exactly this (output styles, or similar). Verify
+empirically in a scratch session — do not assume in either direction, per the standing rule that
+burned several confident-but-wrong assertions in this repo already. If a built-in covers it, the
+plugin should document the built-in and build nothing. Duplicating a platform feature inside a
+plugin is the worst outcome available here: ongoing maintenance for zero differentiation.
+
+**Why it might be counter-productive — the risks, in priority order:**
+
+1. **Register/substance conflation. This is the one that matters.** A prompt that says "be simple"
+   reliably produces more than simple *vocabulary* — it drops caveats, flattens uncertainty, and
+   sounds more confident than the evidence supports. For a user whose stated purpose is *learning*,
+   that is the worst possible failure: they walk away with a clean, memorable, wrong model and no
+   signal that anything was elided. Directly parallels the `/catch-up` remote-state finding — a
+   confident simplification terminates further questioning exactly like a stale negative does.
+   **Any persona must be able to change how something is said and never what is true, what was
+   verified, or which caveats survive.**
+2. **Analogy drift.** A persona instructed to use "lots of analogies" will manufacture them where
+   none fit, and a bad analogy is worse than no analogy because it is memorable and load-bearing in
+   the reader's head. The rule should be *analogy when it genuinely maps, plain language always* —
+   never an analogy quota.
+3. **Invisible mode state.** A toggle that silently changes behavior is a problem when the user
+   forgets what is active, or when context compaction drops the fact mid-session. Note this repo
+   already solved exactly this shape for testing mode (explicit toggle command + marker file +
+   `SessionStart` hook injecting the active state into context). Reuse that pattern rather than
+   re-deriving it.
+4. **Proliferation.** "More personas as we go" is how this becomes twelve half-specified overlapping
+   modes that nobody uses. Same promotion discipline as everything else here: one persona, proven in
+   real use across multiple sessions, before a second exists.
+5. **Collision with the orchestration doctrine.** The doctrine mandates evidence-bearing reporting —
+   command output, verification transcripts, explicit unverified/verified labels. A communication
+   persona must sit *above* that layer and cannot be allowed to suppress it. Worth stating as an
+   explicit precedence rule if this is ever built, since the repo has already been bitten twice by
+   two of its own instructions colliding with no stated precedence.
+
+**Why it might genuinely be worth it.** Everything above is achievable today by simply asking, so
+the feature buys three things and should be judged only on them: **persistence** (set once, applies
+all session, no re-asking every turn), **consistency** (a stable register instead of drift back to
+default after a few exchanges), and **composability** (a persona could plausibly alter more than
+prose — a learning mode might also mean narrate routing decisions instead of delegating silently,
+and prefer showing the work over reporting the result). The third is the only one that could not be
+replicated by a saved snippet of text, so it is the real test of whether this deserves to be a
+plugin feature rather than a habit.
+
+**How to implement, if step 0 says build it.** Mirror the testing-mode toggle exactly — it is built,
+shipped, and validated: a `/claude-orchestrator:persona <name|off|status>` command writing a marker
+file, plus `SessionStart` hook injection so the active persona is visible in context every session.
+Session-scoped rather than per-project, since the need is situational (the same user wants plain
+language while learning and dense evidence while reviewing, in the same repo, hours apart).
+
+**The falsifiable test for risk 1**, which should gate promotion: take a substantive technical answer,
+produce it in default mode and in persona mode, and diff them for *dropped facts, dropped hedges, and
+confidence inflation* — not for readability. If the persona version loses caveats rather than
+jargon, the persona is broken regardless of how good it reads. Readability is the easy half and the
+half that will look fine.
+
 ## Log (append-only — one entry per real test of one of these ideas)
 
 *(empty — nothing tested yet)*
