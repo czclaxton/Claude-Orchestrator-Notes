@@ -1,11 +1,16 @@
 # PLAN — making communication preferences load automatically, and closing a learning loop
 
-**Written by the orchestrator, 2026-08-24, for review. Nothing here is installed.**
+**Written by the orchestrator 2026-08-24; brought current at end of session the same day. Nothing
+here is installed — no file exists under `~/.claude/`.**
 
-⚠️ **Read this warning first.** This document captures decisions made in conversation. Some of it
-supersedes the other files in this directory, and one thing in it supersedes an earlier statement of
-my own. Where this document and another file disagree, sections 1 and 6 below say which wins. Do not
-treat the other files as current without checking here.
+⚠️ **Read this warning first.** This document was written mid-session and then had to be corrected
+twice, because decisions kept being made in conversation after it was written. That is a real hazard
+logged in `lessons.md`, not a hypothetical — a review dispatched against an earlier version of this
+file produced a confident false finding.
+
+**Reading order that avoids the trap:** §2 and **§2b** are current. §3, §5 and §7 were written
+earlier and have been annotated where §2b overrides them — strikethrough means dead, not merely
+downgraded. §6 corrects a statement of my own. If §2b and anything below disagree, §2b wins.
 
 ---
 
@@ -49,13 +54,49 @@ Connor personally asks for it. There is no other trigger.
   (line 142). The interviewing-primary reversal was never ratified by Connor, and it is entangled
   with §5 open question 3, which is also unanswered. **Open, not decided.**
 
+### 2b. Decided LATER the same session — these supersede parts of §3 and §5 below
+
+Everything here was settled after §3–§5 were written. **Where they disagree, this wins.**
+
+- **Placement: a custom output style at `~/.claude/output-styles/`, `keep-coding-instructions: true`.
+  This reverses my `~/.claude/rules/` recommendation in §5.1, which is now dead.** Documented
+  grounds: CLAUDE.md-class files are delivered as a user message *after* the system prompt with "no
+  guarantee of strict compliance"; output styles modify the system prompt itself, sit at the
+  recency-favoured end, self-reinforce via built-in adherence reminders, and survive compaction.
+- **Format: hybrid — rules plus a few contrast pairs. This answers §5.2.** Unconditional statements
+  rather than `when X → do Y` (~15 points worse on the one benchmark isolating it). Positive framing.
+  Rationale clause where the reason isn't obvious. Written in the target voice, because prompt
+  register leaks into output register. A ~15-token tail reminder. Evidence in
+  `prompt-steering-findings.md`.
+- **No rule budget. This retires the 12-rule cap.** Adherence cost is smooth (p^N), so a cap buys no
+  adherence. It survives only as a process device to force consolidation, and must not be sold as
+  more than that.
+- **The decision protocol — the session's most load-bearing outcome, and mostly Connor's design.**
+  Default to making reversible calls and reporting them; stop and pitch when undoing would cost him
+  more than a minute, when it locks in a direction, or when only he can answer. A pitch carries the
+  decision in plain terms, a recommendation, and the strongest case against it, so "go" is usually
+  the whole reply. **Bring decisions, not problems.** Nothing genuinely open gets *quietly* closed —
+  announced calls are fine, silent ones are not.
+- **This answers §5.3 and unblocks R6.** The volume control is the pitch shape itself: cost per ask
+  drops far enough that asking stops being the load he is escaping.
+- **Bluntness.** No softening, no hedging, never a yes-man. Closes a gap
+  `communication-preferences.md` lists under "do not invent answers to these."
+- **A dichotomy is a negative claim.** "It's A or B" asserts "there is no C," so the
+  negatives-need-a-search rule applies to option spaces. Name what you considered and discarded, and
+  say whether you searched or only thought. Connor's point, and it is the preventive fix for what old
+  rule 10 only patched after the fact.
+- **Old rule 10 is cut to its residual.** "Offer a third framing when you disagree" only fires after
+  the failure has happened; his objection was that the bug is in the first evaluation. Only "engage
+  directly when he says he is confused about framing" survives.
+
 ## 3. What is PROPOSED and NOT approved
 
-- **The 12 rules in `DRAFT-rules.md`.** Drafted this session. Connor has not reviewed them line by
-  line. Open to cuts.
-- **The 12-rule budget.** A number I picked. The design brief proposes ~30 for the general ruleset;
-  12 is my compression of the communication subset. Unjustified beyond "small."
-- **R6 is explicitly blocked** — see §5.
+- **The rules themselves**, now in `draft-communication-output-style.md` — not `DRAFT-rules.md`,
+  which was session scratch and no longer exists. Advisor-reviewed once, three findings applied.
+  **Connor has not reviewed them line by line.** Open to cuts.
+- **His gut-feel pick of which matter most — 1, 4, 6, 7.** Stated as feeling, not severity, and
+  explicitly a hypothesis to test, **not a cut list.** Ship all of them and cut on evidence.
+- ~~**R6 is explicitly blocked**~~ — **unblocked, see §2b.**
 
 ## 4. What was ESTABLISHED this session (research, verified)
 
@@ -73,22 +114,28 @@ Full detail in `claude-code-capabilities.md`. The load-bearing facts:
 
 ## 5. OPEN QUESTIONS — not answered, do not assume
 
-1. **Mechanism: `~/.claude/rules/` or an output style?** Asked twice, not yet answered. My
-   recommendation is `rules/` (global, plain markdown, clean profile seam, independent of the plugin
-   scope question). The case against is that output styles edit the system prompt, which is stronger
-   placement, and the docs describe them as being for exactly this. Risk of splitting: two homes for
-   one profile, which the design brief warns against.
-2. **Is a checklist of imperative rules even the right format?** Connor raised this and he is right
-   to. A separate research agent is investigating rules vs. worked examples vs. both. **The 12 rules
-   may need reformatting depending on what comes back.** Do not treat `DRAFT-rules.md`'s format as
-   settled.
-3. **From the design brief, still unanswered and it gates R6:** *when is being asked worth it, and
-   when is it an imposition?* Asking spends the attention the whole system exists to conserve. Until
-   answered, R6 ("when you notice you are guessing → ask") has no volume control and could produce
-   constant interviewing — the exact load he is escaping.
-4. **Does this extend Claude Orchestrator or become its own tool?** Open in the design brief, open in
-   `RESUME-PROMPT.md`. Bears on where the generator command lives.
-5. **What triggers a compile session?** See Problem 1 in §7.
+1. ~~**Mechanism: `~/.claude/rules/` or an output style?**~~ **ANSWERED — output style. See §2b.**
+2. ~~**Is a checklist of imperative rules the right format?**~~ **ANSWERED — hybrid. See §2b.**
+3. ~~**When is being asked worth it?**~~ **ANSWERED by the decision protocol in §2b.** The nuance
+   that resolved it: the variable is not volume but *category*. Don't ask what you could find out;
+   don't ask what's already decided; do ask what only he knows. And "ask or guess" was itself a false
+   dichotomy — the third move is proceed under a stated assumption.
+4. **Does this extend Claude Orchestrator or become its own tool?** Still open. Bears on where the
+   generator command lives.
+5. **What triggers a compile session?** Still open, and it is the deciding risk — see §7 Problem 1.
+   The advisor's proposed fix: `UserPromptSubmit` can inject `additionalContext`, so the hook that
+   counts escalations can also say "compile is overdue." **Do not ship the generator without it.**
+6. **Does `~/.claude/rules/*.md` reach subagents?** Unestablished anywhere. Output styles are
+   documented as *not* reaching them. Matters because lane output reaches the user through the
+   orchestrator's relay.
+7. **Which mechanism owns behavioural rules?** Project auto-memory already holds some
+   (`feedback_one_question_at_a_time`, `feedback_verify_dont_assume`). An output style makes a third
+   mechanism, and contradictory rules are documented as resolved arbitrarily. Decide deliberately.
+8. **`communication-preferences.md` §1 is stale and nobody has fixed it.** It says "never a numbered
+   batch"; Connor superseded that on 2026-08-24 — his driver was the cost of composing a structured
+   reply, not topic count, so several items in one message are fine when answering is cheap, framed
+   as a trial. **A review has already produced a false finding from the stale text.** Updating it is
+   the first real instance of the missing compile step.
 
 ## 6. ⚠️ SUPERSEDED — a correction to my own earlier statement
 
