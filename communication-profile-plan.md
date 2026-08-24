@@ -12,6 +12,19 @@ file produced a confident false finding.
 earlier and have been annotated where §2b overrides them — strikethrough means dead, not merely
 downgraded. §6 corrects a statement of my own. If §2b and anything below disagree, §2b wins.
 
+⚠️ **Two files this document cites are NOT on `master`.** `communication-preferences.md` and
+`assistant-design-brief.md` exist only on PR #14's branch,
+`lessons/20260824-192100-agent-contradictions-and-stale-artifacts`. They are not in the working tree.
+To read one without merging:
+
+```
+git fetch origin lessons/20260824-192100-agent-contradictions-and-stale-artifacts
+git cat-file -p FETCH_HEAD:communication-preferences.md
+```
+
+That PR bundles them with three lessons entries — 1078 lines across 5 files — which is why it has
+not been triaged. Splitting it is pending the user's decision.
+
 ---
 
 ## 1. The problem
