@@ -484,3 +484,99 @@ needing to check whether the premises it reasoned from are actually binding.
 as a distinction between assigned output and volunteered context. Finding 2 belongs in the
 commitment-boundaries section, and extends the 2026-08-20 entry's theme of the doctrine being
 under-specified where two of its own instructions meet.
+
+### 2026-08-25 — A spec's verification step can be structurally inert, and four parallel lanes caught it when the architect didn't
+
+**Status: finding 1 verified** (re-ran the ignore check and the diff command myself and confirmed
+both were inert on the targets); **finding 2 verified** (read the delivered prose and corrected two
+instances); **finding 3 verified** (the stale claim and its later correction are both a matter of
+record from this session); **finding 4 asserted** (an impression about a single occurrence, not
+re-measured).
+
+**Finding 1 — the spec contract validates that a Verification step exists, never that it can
+produce a signal on this particular target.** The architect wrote four specs in one pass and
+launched them in parallel. Each told its lane to prove the work with a version-control diff
+command. Every target file sat in a directory excluded from version control, so that command
+returns empty output whether or not the file changed — the empty result is indistinguishable from
+"no edit was made."
+
+All four lanes independently detected this, stated plainly that the prescribed check could not
+produce evidence for this target, declined to report it as passed, and substituted content-based
+verification (heading inventories, line-count deltas, direct read-back). That is exactly the
+behavior the doctrine wants and it is worth recording as a success, not only as an architect
+failure — a lane that had simply run the command and reported "clean" would have handed back a
+false pass that looked identical to a real one.
+
+Two things generalize. First, **an empty result from a verification command is the same trap the
+session-start guidance already names for a fetch that prints nothing** — silence read as
+confirmation. The Verification section tells the orchestrator to re-run the command and judge the
+output; it says nothing about first establishing that the command is capable of returning a
+negative. Second, **parallel delegation multiplies a single architect error rather than diversifying
+it.** The four specs were written from one mental template in one sitting, so one wrong assumption
+about the target's nature was replicated four times simultaneously. Serial delegation would have
+surfaced it after the first report.
+
+**Rule concluded:** when writing the Verification part of a spec, the test is not "is this the right
+command" but "can this command distinguish success from failure *on this target*." Where the
+deliverable sits outside the reach of the default tooling — excluded paths, generated artifacts,
+anything untracked — the spec must name a verification method that actually observes the artifact.
+And when fanning out parallel specs built from one template, a shared assumption is a shared point
+of failure worth checking once before launching, not four times after.
+
+**Finding 2 — for prose deliverables, spec imperatives get transcribed into the document body.**
+The specs supplied content using instruction phrasing addressed to the writer — constructions of
+the form "State that plainly: <content>" and "Record why this matters: <content>". One lane copied
+those imperatives verbatim into the finished document, leaving instructions to the author sitting
+in reader-facing text. The substance was correct and correctly placed; only the framing leaked.
+
+This failure mode is specific to prose. When the deliverable is code, spec English cannot survive
+into the artifact — it would not compile, and the gap between instruction and output is enforced by
+the language itself. Documentation has no such filter: the spec and the deliverable are the same
+medium, so any sentence in the spec is a candidate for being pasted into the result.
+
+**Rule concluded:** when the deliverable is prose, supply content *as content* — quotable material,
+not directions to the writer — or state explicitly that instruction phrasing must not appear in the
+output. The spec contract's Interfaces part has no analogue for document tasks, and this is the gap
+it leaves.
+
+**Finding 3 — remote state verified at session start has a shelf life, and the guidance treats it
+as a one-time ritual.** The session-start command is emphatic that claims about remote state need
+server evidence, and that negatives are the dangerous direction because a stale negative stops an
+investigation. That discipline was followed correctly at session start. Roughly ninety minutes
+later the orchestrator relayed a branch-status negative — that certain work was still unmerged —
+sourced from that opening check. It had since become false; the work had been merged on the server
+while the session was in progress. It was caught only because an unrelated later command happened
+to re-read the remote.
+
+The framing is the problem: the guidance is written as a start-of-session checklist, so the
+verification reads as something that is *done* rather than something that *decays*. The longer a
+session runs, the more likely a relayed negative about remote state is stale — and long sessions
+are precisely when collaborators are most likely to have pushed.
+
+**Rule concluded:** treat a verified remote fact as having an expiry, not a checkmark. Before
+relaying a negative about remote state that was established earlier in the same session — "still
+unmerged", "nothing new has landed", "that hasn't moved" — re-query. The cost is one command; the
+failure mode is telling the user nothing has happened when something has.
+
+**Finding 4 — the architect volunteered an explanation for a third party's behavior and stated it
+as likely fact.** Asked to evaluate review feedback from another person, the orchestrator offered a
+motive for why that person had raised a point — that they had probably not noticed something —
+and presented it with more confidence than any evidence supported. The user pushed back on it
+directly, and a timestamp check disproved it outright.
+
+This is the same family as the already-logged pattern of the architect asserting facts it has not
+checked, but with a distinguishing feature worth separating: the subject was a *person's reasoning*,
+which is not verifiable from the repository at all. There was no check that would have confirmed
+it, which is precisely why it should have been offered as an open question or not at all.
+
+**Rule concluded:** claims about why a human did something are unverifiable by construction and
+should be marked as speculation or omitted. Where the evidence permits a factual check that bears on
+it — when something was actually visible, what the record shows — run that instead and report the
+fact, leaving the motive alone.
+
+**Where it lives:** here only. Finding 1 belongs in the spec contract's Verification part, as a
+requirement that the named check be capable of failing on the given target, plus a note in the
+Parallelism section that specs fanned out from one template share their assumptions. Finding 2
+belongs in the spec contract as guidance for non-code deliverables. Finding 3 belongs in the
+session-start command's remote-state section, as an expiry on verified facts rather than a one-time
+gate. Finding 4 extends the existing architect-asserted-facts theme.
