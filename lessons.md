@@ -580,3 +580,93 @@ Parallelism section that specs fanned out from one template share their assumpti
 belongs in the spec contract as guidance for non-code deliverables. Finding 3 belongs in the
 session-start command's remote-state section, as an expiry on verified facts rather than a one-time
 gate. Finding 4 extends the existing architect-asserted-facts theme.
+
+### 2026-08-25 (same session, user-initiated) — `/wrap-up` composes from memory instead of auditing state, so a follow-up "check again" reliably finds things it missed
+
+**Status: finding 1 verified** (all three misses re-checked directly against live state after the
+fact); **finding 2 verified** (branch and log inventory of the notes repo re-read); **finding 3
+verified** (the command body mandates the sign-off unconditionally); **the cross-session pattern is
+user-reported, not verified here** — the user states this happens *every* time they ask for a second
+pass, across many sessions. Only this session's instance was re-checked. That distinction matters:
+the mechanism below is verified, its claimed frequency is not.
+
+**Origin, and why it is worth taking seriously.** The user raised this themselves, unprompted, as a
+standing observation about the tool rather than a complaint about one session: they feel obliged to
+ask for a second pass after `/wrap-up`, because when they do, it always turns something up. This
+session was the example that prompted it, not the whole basis. They explicitly said they did not
+know how to address it and wanted it investigated rather than just logged.
+
+**Finding 1 — every step of `/wrap-up` is a compose step; not one is a verify step.** The command
+sweeps findings into a log, writes a resume note, writes a sentinel, and announces completion. All
+four produce an artifact. None checks an artifact against the world. The resume note in particular
+is written from what the session *remembers*, which means it faithfully reproduces the session's
+beliefs — including the wrong ones. An audit re-derives from live state and can therefore contradict
+those beliefs; a summary cannot.
+
+The three things the follow-up pass caught were all belief-vs-state mismatches, and all three were
+checkable at wrap-up time with no new information:
+
+- **A claim about a third party that had never happened.** Mid-session the orchestrator drafted a
+  message to another person, asked the user whether to send it, and got no answer because the
+  conversation moved on. It then wrote into a durable project document that the person *had* been
+  told. A stale artifact stating that someone was informed when they were not is the most damaging
+  of the three, because a later session reads it as fact and will not re-ask.
+- **An unanswered question absent from the resume note.** The same dangling decision never made it
+  into the "still open" section, so the note's own open-items list was incomplete in exactly the
+  place the session had drifted.
+- **A background process reported as stopped that was still running.** A dev server had been
+  launched via a backgrounded shell and stopped via the task-stop tool; the tool reported success,
+  but it killed the wrapper shell and the server it had spawned outlived it as an orphan. The
+  orchestrator had already told the user both servers were down, on the strength of the tool's
+  success message rather than a port check.
+
+The categories generalize. Highest-yield first: **claims about parties and systems outside the
+repository** — "X was told", "Y was sent", "Z is stopped" — because nothing in the repo contradicts
+them, so they are asserted from memory and never bounce off reality. Then **questions the assistant
+asked that the user never answered**, which are a distinct and mechanically recoverable category
+that "what's still open" does not reliably surface. Then **side effects**: processes, servers,
+worktrees, files created outside the deliverable.
+
+**Finding 2 — the notes repo shows this has been approached seven times and never named.** Seven
+separate logged entries touch `/wrap-up` or the resume note: a hardcoded note path, a note clobber,
+note shorthand misread as a behavioral claim, a stale ledger, an over-broad dirty-tree guard, and
+more. Every one is about the command's *mechanics* — where it writes, what it overwrites, what it
+guards. Not one is about whether the pass is *complete*. The defect has been circled repeatedly
+from adjacent angles while the load-bearing question — does this command actually check anything —
+went unasked. Worth noting as a pattern in its own right: a cluster of near-miss entries around one
+command is itself evidence that something structural is being missed.
+
+**Finding 3 — the command's final mandated act is an unconditional confidence assertion.** The body
+requires ending with a fixed sentence declaring findings swept and instructing the user to clear. It
+is emitted verbatim whether or not anything was verified, because nothing in the command produces a
+pass/fail signal it could be gated on. So the most prominent, most memorable output of the whole
+command is a done-signal decoupled from actual doneness. The user's habit of asking "are you sure"
+is them correcting for a claim the command instructed the assistant to make regardless of its truth.
+
+**A relevant negative result: same-context self-review worked.** The follow-up pass was run by the
+same context that produced the errors — no fresh agent, no cleared state, no independent model. It
+still found all three. That locates the fault in **task framing, not context contamination**: the
+information needed was present the whole time, and the difference was being asked to look rather
+than to recall. This matters because it makes the fix cheap. It does not need a second reviewer or a
+clean context; it needs the command to contain the question.
+
+**Steelman, stated honestly:** any second look at anything finds something, and a third pass would
+presumably find less — so some of this is ordinary diminishing returns rather than a specific defect.
+Two things argue against dismissing it on those grounds. The severity was not marginal: one finding
+was a false statement written into a durable document that outlives the session. And the misses
+clustered in predictable, enumerable categories rather than being scattered — which is the signature
+of a missing checklist, not of finite attention.
+
+**Rule concluded:** `/wrap-up` needs a verification step between composing the resume note and
+declaring completion, with an explicit bounded checklist rather than a vague instruction to
+double-check. At minimum: re-verify any claim the session made about a person or system outside the
+repository; enumerate questions asked of the user that were never answered and record them as open;
+query the system for side effects still running rather than trusting the success message of whatever
+was used to stop them; and confirm repository state directly. The completion sentence should either
+be gated on that step or state what was actually checked. A command whose last instruction is to
+assert success should first contain something capable of failing.
+
+**Where it lives:** here only. Belongs in `commands/wrap-up.md` as a new step before the sign-off,
+and the sign-off itself should be revised. Related to but distinct from the seven existing
+resume-note and wrap-up entries, all of which address mechanics rather than completeness — worth
+cross-referencing them when this is fixed, since a fix aimed only at mechanics will not touch this.
