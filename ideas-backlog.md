@@ -73,6 +73,25 @@ this directly — screenshot-heavy Claude in Chrome usage ate ~73% of one conver
 a stale/lagging screenshot produced a false-positive bug report that a text read would have caught
 immediately. Cheap to state as a default now.
 
+### 5. The "chief of staff" assistant — see `assistant-design-brief.md`
+A full design conversation (2026-08-21/22) for a tool that manages context *and* the protocol for
+relaying information and taking high-level guidance. Reframes the goal from a memory system to a
+**communication protocol**, organized around four modules: Routing (already built — this plugin),
+Translation (layered explanations), Continuity (the thread record), Delegation (decision boundaries
+accumulated from precedent). Not built, not specced, and it is **not yet decided whether this
+extends Claude Orchestrator or is a separate tool** — Connor explicitly left that open.
+
+Kept in its own file rather than summarized here because the reasoning is the valuable part: several
+positions were reversed mid-conversation by his pushback, and the brief records what was confirmed,
+what was corrected, and what was only proposed. Four questions are genuinely unanswered, including
+the one the session ended on — how aggressively the system may interview him, given that asking
+spends the attention the tool exists to conserve.
+
+**Relevant to this plugin regardless of where it lands:** the critique that a feedback log with no
+read path is a diary (see `lessons.md`, 2026-08-21 entry), the *when X, do Y* test for whether a
+logged lesson can bind behavior, and the soft-rules-vs-hooks enforcement split that overlaps the
+research in notes PR #9.
+
 ## Log (append-only — one entry per real test of one of these ideas)
 
 *(empty — nothing tested yet)*
