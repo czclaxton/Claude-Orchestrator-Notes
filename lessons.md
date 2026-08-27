@@ -1032,3 +1032,58 @@ completing the task.
 
 **Where it lives:** here. A command that plans destructive version-control work should probe the
 permission boundary during planning, not at execution.
+
+## 2026-08-26 (later session, found on a user-requested re-review) — A file's warning about how it fails was read, understood, and then violated in the same act of rewriting it; and the sweep produced the exact artifact its pending fix exists to prevent
+
+**Status: both findings verified.** The dropped content was established by diffing the rewritten note
+against the version it replaced. The duplicate-artifact count was produced by re-running the
+migration's own dry run after the sweep completed.
+
+**Context, project-agnostic.** The session-end command writes a resume note for the next session. The
+note it overwrites carried, in its own header, a warning that this had gone wrong twice before, plus
+an explicit instruction: *diff against the old version before overwriting, because rewriting from
+session memory drops live threads.* The orchestrator read that header at session start — it was the
+first thing the session-start command surfaced — and then rewrote the note from memory anyway.
+
+The user asked for a review of the session's documentation. That review found the failure. Nothing in
+the sweep itself would have.
+
+**Finding 1 — the warning was in the right place, addressed to the right reader, and still did not
+fire.** The first draft dropped seven standing constraints, two published artifact URLs, four open
+questions, and one undone decision. Several were not stale: one dropped open question had been
+*activated* earlier in the same session (a risk that installing something would make live, which
+installing it duly did), and the dropped artifacts were deliverables the user had been reading hours
+before.
+
+What makes this worth logging rather than filing as carelessness: the instruction did not fail
+through inattention. **The act of writing a comprehensive note feels like remembering, so the check
+that would reveal what was forgotten never gets triggered** — the same shape as a partial read
+producing confidence. A rewrite composed from a rich session context is *more* susceptible, not less,
+because the author has so much genuine material that the absence of the rest is unnoticeable.
+
+**Rule concluded:** an instruction to compare against a prior version cannot live only in the artifact
+being replaced, because the replacement is authored by someone who believes they already know the
+contents. The comparison has to be a step in the procedure that produces the artifact, with the old
+version actually retrieved and read — not a caution the author is trusted to remember. Where a
+document is overwritten rather than appended to, the writing step and the diffing step are two
+separate obligations, and only the second one catches loss.
+
+**Finding 2 — the sweep created a new instance of the problem its own pending fix addresses.** A fix
+was written, reviewed and merged this session that changes the sweep to write a fresh file per
+session instead of appending to a shared one, precisely because appending had produced fourteen
+mutually-conflicting branches that never merged. The fix sat unreleased. The sweep then ran the old
+behaviour and produced a fifteenth.
+
+This was foreseen — the orchestrator had told the user in as many words that every sweep before the
+fix ships adds another. It still happened, because the sweep executes the *installed* command, and
+merging is not installing.
+
+**Rule concluded:** between merging a behavioural fix and installing it, the old behaviour keeps
+running and keeps generating the problem. When a fix changes what a routine command produces, the
+backlog it addresses is still growing during that window, and any count taken before the window
+closes is already stale. Either install before running the routine again, or record that the count
+moved and by how much.
+
+**Where it lives:** here. The resume-note step in the session-end command should require retrieving
+the previous version and diffing before writing the new one, rather than describing that requirement
+inside the note it is about to destroy.
